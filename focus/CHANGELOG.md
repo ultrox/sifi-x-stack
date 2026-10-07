@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.4
+
+- Add saved native Home editions at 08:00, 13:00 and 18:00 local time, with up to 40 posts per feed.
+- Reuse the same edition across reloads, tabs and browser restarts; keep active reading sessions stable across schedule boundaries.
+- Preserve X’s native post rendering, controls and virtual scrolling, with a compact edition heading and clear ending.
+- Keep editions separate by account and feed; retain only the latest snapshots on this device.
+- Preserve saved like/bookmark states after successful native actions and retain the last edition if a refresh fails.
+
 ## 0.4.2
 
 - Remove Home pagination and restore X’s native Home feed.

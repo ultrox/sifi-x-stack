@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "SIFI X Focus",
-  "version": "0.4.2",
-  "description": "Following by default, one video at a time, and replies limited to six deliberate pages.",
+  "version": "0.5.4",
+  "description": "Predictable saved Home editions, Following by default, one video at a time, and deliberate reply pages.",
   "content_scripts": [
     {
       "matches": [
@@ -12,6 +12,21 @@
         "https://*.twitter.com/*"
       ],
       "js": [
+        "editions-bridge.js"
+      ],
+      "run_at": "document_start",
+      "world": "ISOLATED"
+    },
+    {
+      "matches": [
+        "https://x.com/*",
+        "https://*.x.com/*",
+        "https://twitter.com/*",
+        "https://*.twitter.com/*"
+      ],
+      "js": [
+        "editions-core.js",
+        "editions.js",
         "focus.js",
         "replies-core.js",
         "replies.js"
@@ -22,5 +37,11 @@
       "world": "MAIN",
       "run_at": "document_start"
     }
-  ]
+  ],
+  "permissions": [
+    "storage"
+  ],
+  "background": {
+    "service_worker": "editions-store.js"
+  }
 }

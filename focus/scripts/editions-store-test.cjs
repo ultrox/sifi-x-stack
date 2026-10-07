@@ -1,0 +1,21 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const core=require('../extension/editions-core.js');
+const data={};let listener;
+const chrome={runtime:{id:'fixture-extension',onMessage:{addListener:fn=>listener=fn}},storage:{local:{get:async key=>key===null?structuredClone(data):{[key]:structuredClone(data[key])},set:async values=>Object.assign(data,structuredClone(values)),remove:async keys=>keys.forEach(k=>delete data[k])}}};
+vm.runInNewContext(fs.readFileSync('extension/editions-store.js','utf8'),{chrome,SifiEditions:core,importScripts(){},URL});
+const sender={id:'fixture-extension',url:'https://x.com/home'};
+const send=message=>new Promise(resolve=>listener({type:'sifi-edition-store',...message},sender,resolve));
+const record=(account,edition)=>({schema:1,account,feed:'following',edition,capturedAt:1234,nextAt:9999,count:0,payload:{data:{home:{home_timeline_urt:{instructions:[]}}}}});
+(async()=>{
+ const first=record('123','10');
+ await Promise.all([send({action:'put',account:'123',feed:'following',record:first}),send({action:'put',account:'123',feed:'following',record:{...first,capturedAt:2345}})]);
+ assert.equal((await send({action:'get',account:'123',feed:'following'})).record.capturedAt,1234,'First completed capture wins');
+ await send({action:'put',account:'123',feed:'following',record:record('123','9')});assert.equal((await send({action:'get',account:'123',feed:'following'})).record.edition,'10','An old tab cannot overwrite the new edition');
+ await send({action:'put',account:'456',feed:'following',record:record('456','11')});assert.equal(Object.keys(data).length,1,'Previous account snapshots are removed');
+ assert.equal((await send({action:'get',account:'123',feed:'following'})).record,null);
+ assert.ok((await send({action:'put',account:'456',feed:'following',record:record('999','12')})).error,'Account mismatch is rejected');
+ let replied=false;assert.equal(listener({type:'sifi-edition-store',action:'get',account:'456',feed:'following'},{id:'fixture-extension',url:'https://unrelated.test/'},()=>replied=true),undefined);assert.equal(replied,false);
+ console.log('Edition storage serialization, first-writer consistency, no downgrade, account cleanup, and sender validation passed.');
+})().catch(error=>{console.error(error);process.exitCode=1;});
