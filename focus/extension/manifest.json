@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "SIFI X Focus",
-  "version": "0.1.0",
-  "description": "Following by default. Watch one video, then exit: no swipe feed or automatic next video.",
+  "version": "0.3.1",
+  "description": "Following by default, one video at a time, and replies limited to six deliberate pages.",
   "content_scripts": [
     {
       "matches": [
@@ -12,7 +12,9 @@
         "https://*.twitter.com/*"
       ],
       "js": [
-        "focus.js"
+        "focus.js",
+        "replies-core.js",
+        "replies.js"
       ],
       "css": [
         "focus.css"

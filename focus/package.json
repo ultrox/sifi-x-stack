@@ -1,11 +1,11 @@
 {
   "name": "sifi-x-focus",
-  "version": "0.1.0",
+  "version": "0.3.1",
   "private": true,
   "scripts": {
-    "check": "node --check extension/focus.js",
+    "check": "node --check extension/focus.js && node --check extension/replies-core.js && node --check extension/replies.js",
     "build": "node scripts/build.cjs",
     "build:crx": "node scripts/build.cjs --crx",
-    "test": "node scripts/test.cjs"
+    "test": "node scripts/test.cjs && node scripts/replies-test.cjs && node scripts/replies-transport-test.cjs"
   }
 }

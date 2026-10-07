@@ -4,3 +4,13 @@ html[data-sifi-video-locked] [data-testid="vss-scroll-view"] {
   overscroll-behavior: none !important;
   scroll-snap-type: none !important;
 }
+
+/* Keep the native toolbar; reserve its space below the inline pager. */
+html[data-sifi-replies-active] [data-testid="FloatingActionButtonBase"] { display: none !important; }
+/* The native shell contains only the original post/composer, not replies. */
+html[data-sifi-replies-active] [data-sifi-post-shell] {
+  height: var(--sifi-post-shell-height, auto) !important;
+  min-height: 0 !important;
+  overflow: clip;
+}
+html[data-sifi-replies-active] [data-sifi-empty-tail] { display: none !important; }
