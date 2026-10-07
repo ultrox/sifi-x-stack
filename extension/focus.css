@@ -1,0 +1,6 @@
+html[data-sifi-video-locked] [data-testid="vss-scroll-view"] {
+  overflow-y: hidden !important;
+  touch-action: none !important;
+  overscroll-behavior: none !important;
+  scroll-snap-type: none !important;
+}
