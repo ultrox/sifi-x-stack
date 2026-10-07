@@ -1,7 +1,12 @@
-# SIFI X Focus
+# SIFI X Stack
 
-Separate from SIFI X Ad Blocker. Defaults Home to Following each time you enter it. Locks X’s fullscreen video viewer to the clip you opened: touch swipes, wheel scrolling, navigation keys, automatic next-video playback and next-video route changes are blocked. Exit/back and video seeking remain available.
+Two independent extensions for X/Twitter, maintained together:
 
-Load `extension/` unpacked on desktop, or install `dist/sifi-x-focus.crx` in Titanium. `npm run check`, `npm test`, `npm run build:crx`. Keep `.keys/x-focus.pem` private for stable updates. No additional permissions or network requests.
+- **SIFI X Ad Blocker** (`ads/`): hides promoted feed posts and ad banners.
+- **SIFI X Focus** (`focus/`): defaults Home to Following and locks fullscreen viewing to one video. Exit to choose another; no swipe feed or automatic next clip.
 
-X can change its viewer markup; the current lock targets `vss-scroll-view`, `/mediaViewer`, and `/video/N` routes.
+Install either extension or both. Each keeps its own package and signing key, so updates preserve the existing installed extension IDs.
+
+Run `npm run check`, `npm test`, `npm run build`, or `npm run build:crx` from this directory. Unsigned ZIPs and signed CRXs are written to each extension’s `dist/` folder. Load `ads/extension/` and `focus/extension/` unpacked for desktop development.
+
+Private signing keys and generated packages are excluded from Git.

@@ -1,0 +1,9 @@
+{
+  "name": "sifi-x-ads",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.cjs",
+    "build:crx": "node scripts/build.cjs --crx"
+  }
+}

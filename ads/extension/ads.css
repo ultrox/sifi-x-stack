@@ -1,0 +1,12 @@
+/* Placement tracking outside an article identifies a promoted timeline cell.
+   Ordinary video players use the same test id INSIDE an article: keep those.
+   CSS reevaluates recycled cells automatically, with no scroll observer. */
+[data-testid="cellInnerDiv"]:has([data-testid="placementTracking"]:not(article *)),
+[data-testid="cellInnerDiv"]:has([data-testid="promotedIndicator"]),
+[data-testid="whoToFollowSspAd"],
+[id^="div-gpt-ad"],
+iframe[id^="google_ads_iframe"],
+iframe[src*="googlesyndication.com"],
+iframe[src*="doubleclick.net"] {
+  display: none !important;
+}

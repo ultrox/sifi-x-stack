@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "SIFI X Ad Blocker",
+  "version": "0.1.0",
+  "description": "Hide promoted posts and ad banners on X without changing ordinary posts or videos.",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://x.com/*",
+        "https://*.x.com/*",
+        "https://twitter.com/*",
+        "https://*.twitter.com/*"
+      ],
+      "css": [
+        "ads.css"
+      ],
+      "run_at": "document_start"
+    }
+  ]
+}

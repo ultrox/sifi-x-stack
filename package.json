@@ -1,11 +1,11 @@
 {
-  "name": "sifi-x-focus",
+  "name": "sifi-x-stack",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "check": "node --check extension/focus.js",
-    "build": "node scripts/build.cjs",
-    "build:crx": "node scripts/build.cjs --crx",
-    "test": "node scripts/test.cjs"
+    "check": "npm --prefix focus run check",
+    "test": "npm --prefix focus test",
+    "build": "npm --prefix ads run build && npm --prefix focus run build",
+    "build:crx": "npm --prefix ads run build:crx && npm --prefix focus run build:crx"
   }
 }
