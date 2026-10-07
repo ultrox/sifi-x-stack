@@ -9,7 +9,7 @@ Following by default, one video at a time, and deliberate reply pages. Separate 
 - Page changes use in-place rendering and authenticated fetching from X, never a document reload. Current replies remain visible during the pause, and buttons are disabled until the change completes.
 - The pager follows the last reply directly, with thumb-sized numbered buttons and Previous/Next. Padding after the pager reserves room for X’s native toolbar.
 
-Replies use a lightweight reader with author links, text, image previews, quotes and an **Open reply** link to the original conversation for X’s full reply/reaction controls. The original post and native composer stay in X’s own interface. No engagement is sent automatically.
+Replies use a lightweight reader with author links, text, image previews, quotes and an **Open reply** link to the original conversation for X’s full reply/reaction controls. Open reply marks that one thread for a native view, so its API response is left intact; normal pagination resumes on other posts. The original post and native composer stay in X’s own interface. No engagement is sent automatically.
 
 ## Implementation
 

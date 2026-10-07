@@ -13,7 +13,19 @@
   let rootObserver = null;
   let rootRegion = null;
   let mountTimer = null;
-  const threadId = () => location.pathname.match(/^\/[^/]+\/status\/(\d+)\/?$/)?.[1];
+  const rawThreadId = () => location.pathname.match(/^\/[^/]+\/status\/(\d+)\/?$/)?.[1];
+  const taggedReplyId = () => {
+    const id = rawThreadId();
+    return id && new URL(location.href).searchParams.get('sifi_native_reply') === id ? id : null;
+  };
+  let nativeThread = taggedReplyId();
+  function nativeReplyId() {
+    const tagged = taggedReplyId();
+    if (tagged) nativeThread = tagged;
+    else if (rawThreadId() !== nativeThread) nativeThread = null;
+    return nativeThread;
+  }
+  const threadId = () => nativeReplyId() ? undefined : rawThreadId();
   const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   function operation(url) {
@@ -21,7 +33,8 @@
       const parsed = new URL(url, location.href);
       if (parsed.origin !== location.origin || !parsed.pathname.endsWith('/TweetDetail')) return null;
       const variables = JSON.parse(parsed.searchParams.get('variables') || '{}');
-      return variables.focalTweetId ? { url: parsed, variables } : null;
+      if (!variables.focalTweetId || variables.focalTweetId === nativeReplyId()) return null;
+      return { url: parsed, variables };
     } catch { return null; }
   }
   function session(id) {
@@ -239,7 +252,17 @@
     if (quote?.legacy?.full_text) {
       const quoted = link('',`/i/web/status/${quote.rest_id}`,'quote');quoted.append(node('span',null,quote.legacy.full_text));content.append(quoted);
     }
-    content.append(link('Open reply ↗',permalink,'open-reply'));
+    const nativeUrl = new URL(permalink, location.origin);
+    nativeUrl.searchParams.set('sifi_native_reply', row.id);
+    const openReply = link('Open reply ↗', nativeUrl.href, 'open-reply');
+    openReply.addEventListener('click', event => {
+      if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      event.stopPropagation();
+      // A fresh native thread avoids reusing X's already-shaped reply cache.
+      location.assign(nativeUrl.href);
+    });
+    content.append(openReply);
     article.append(avatar,content);
     return article;
   }
@@ -415,8 +438,9 @@
   // Cheap route checks only. Replies never install a scroll/touch handler or
   // a document-wide MutationObserver, and never change the native toolbar.
   setInterval(() => {
-    if (location.pathname !== lastPath) {
-      lastPath = location.pathname;
+    const routeKey = `${location.pathname}|${nativeReplyId() || ''}`;
+    if (routeKey !== lastPath) {
+      lastPath = routeKey;
       cleanup();
       const id = threadId();
       current = id ? sessions.get(id) || null : null;

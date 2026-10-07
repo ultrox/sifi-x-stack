@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2
+
+- Open reply uses a native X thread, bypassing pagination for that specific reply.
+- Preserve the native view if X removes the query marker; resume pagination on other posts.
+
 ## 0.3.1
 
 - Add in-place reply pagination: 10 replies per page, 6 pages maximum.

@@ -1,6 +1,6 @@
 {
   "name": "sifi-x-focus",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "private": true,
   "scripts": {
     "check": "node --check extension/focus.js && node --check extension/replies-core.js && node --check extension/replies.js",
