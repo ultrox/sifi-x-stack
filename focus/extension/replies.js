@@ -3,6 +3,7 @@
   const FORWARD_DELAY = 1500;
   const nativeFetch = window.fetch.bind(window);
   const sessions = new Map();
+  const homeSessions = new Map();
   let current = null;
   let host = null;
   let pending = false;
@@ -12,6 +13,7 @@
   let toolbarObserver = null;
   let rootObserver = null;
   let rootRegion = null;
+  let pagerObserver = null;
   let mountTimer = null;
   const rawThreadId = () => location.pathname.match(/^\/[^/]+\/status\/(\d+)\/?$/)?.[1];
   const taggedReplyId = () => {
@@ -26,50 +28,74 @@
     return nativeThread;
   }
   const threadId = () => nativeReplyId() ? undefined : rawThreadId();
+  function homeKey() {
+    if (!/^\/home\/?$/.test(location.pathname)) return null;
+    const tabs = [...document.querySelectorAll('[role="tablist"] [role="tab"]')];
+    const selected = tabs.findIndex(tab => tab.getAttribute('aria-selected') === 'true');
+    if (selected < 0) return null;
+    return selected === 1 ? 'home:following' : 'home:for-you';
+  }
+  const activeKey = () => homeKey() || threadId();
+  const isHome = () => current?.kind === 'home';
+  const noun = () => isHome() ? 'Posts' : 'Replies';
   const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   function operation(url) {
     try {
       const parsed = new URL(url, location.href);
-      if (parsed.origin !== location.origin || !parsed.pathname.endsWith('/TweetDetail')) return null;
+      if (parsed.origin !== location.origin) return null;
       const variables = JSON.parse(parsed.searchParams.get('variables') || '{}');
-      if (!variables.focalTweetId || variables.focalTweetId === nativeReplyId()) return null;
-      return { url: parsed, variables };
+      const name = parsed.pathname.split('/').pop();
+      if (name === 'HomeLatestTimeline' || name === 'HomeTimeline') {
+        const key = name === 'HomeLatestTimeline' ? 'home:following' : 'home:for-you';
+        return { url: parsed, variables, key, kind: 'home' };
+      }
+      if (name !== 'TweetDetail' || !variables.focalTweetId || variables.focalTweetId === nativeReplyId()) return null;
+      return { url: parsed, variables, key: variables.focalTweetId, kind: 'thread' };
     } catch { return null; }
   }
-  function session(id) {
-    if (!sessions.has(id)) sessions.set(id, { id, page:1, replies:[], cursor:null, request:null, ready:false });
-    const value = sessions.get(id);
-    sessions.delete(id);
-    sessions.set(id, value);
-    while (sessions.size > 2) sessions.delete(sessions.keys().next().value);
+  function session(id, kind = 'thread') {
+    const cache = kind === 'home' ? homeSessions : sessions;
+    if (!cache.has(id)) cache.set(id, { id, kind, page:1, replies:[], cursor:null, request:null, ready:false });
+    const value = cache.get(id);
+    cache.delete(id);
+    cache.set(id, value);
+    while (cache.size > 2) cache.delete(cache.keys().next().value);
     return value;
   }
-  function rememberRequest(id, request) {
-    session(id).request = request;
+  function rememberRequest(op, request) {
+    session(op.key, op.kind).request = request;
   }
   function consume(data, url) {
     const op = operation(url);
     if (!op) return data;
-    const parsed = core.read(data, op.variables.focalTweetId);
+    const parsed = op.kind === 'home' ? core.readHome(data) : core.read(data, op.key);
     if (!parsed.valid) return data;
-    const state = session(op.variables.focalTweetId);
+    const state = session(op.key, op.kind);
     if (!state.ready) {
       state.replies = core.merge([], parsed.replies);
       state.cursor = parsed.cursor;
     }
     state.ready = true;
-    if (state.id === threadId()) { current = state; scheduleMount(); }
-    // X renders the original post and its composer. Our finite, ordinary-flow
-    // reply reader owns the comments, so its virtualizer never owns their height.
-    return core.shape(data, parsed.context, [], 1) || data;
+    if (state.id === activeKey()) {
+      if (current !== state) cleanup();
+      current = state;
+      lastPath = `${location.pathname}|${state.id}|${nativeReplyId() || ''}`;
+      scheduleMount();
+    }
+    // Native X keeps its header/composer. The finite reader owns all paged rows,
+    // so neither Home nor replies have a native infinite-scroll cursor.
+    return (op.kind === 'home' ? core.shapeHome(data) : core.shape(data, parsed.context, [], 1)) || data;
   }
 
   window.fetch = async function (input, init) {
     const url = input instanceof Request ? input.url : String(input);
     const op = operation(url);
     if (!op) return nativeFetch(input, init);
-    rememberRequest(op.variables.focalTweetId, { url, init:{...init, headers:new Headers(init?.headers || (input instanceof Request ? input.headers : undefined))} });
+    const request = input instanceof Request ? input : null;
+    const method = init?.method || request?.method || 'GET';
+    const body = init?.body ?? (request && method.toUpperCase() !== 'GET' ? await request.clone().text() : undefined);
+    rememberRequest(op, { url, init:{...init, method, body, credentials:init?.credentials || request?.credentials || 'include', headers:new Headers(init?.headers || request?.headers)} });
     const response = await nativeFetch(input, init);
     if (!response.ok) return response;
     try {
@@ -82,6 +108,7 @@
   const proto = XMLHttpRequest.prototype;
   const nativeOpen = proto.open;
   const nativeHeader = proto.setRequestHeader;
+  const nativeSend = proto.send;
   const responseText = Object.getOwnPropertyDescriptor(proto, 'responseText').get;
   const responseValue = Object.getOwnPropertyDescriptor(proto, 'response').get;
   const tracked = new WeakMap();
@@ -95,13 +122,13 @@
     }
     const result = nativeOpen.apply(this, arguments);
     const op = operation(String(url));
-    if (method.toUpperCase() !== 'GET' || !op) return result;
-    const meta = {url:String(url),headers:new Headers(),value:null,done:false};
+    if (!['GET', 'POST'].includes(method.toUpperCase()) || !op) return result;
+    const meta = {url:String(url),method:method.toUpperCase(),body:undefined,headers:new Headers(),value:null,done:false};
     tracked.set(this, meta);
     const transform = () => {
       if (meta.done || this.readyState !== 4 || this.status !== 200) return;
       meta.done = true;
-      rememberRequest(op.variables.focalTweetId, {url:meta.url,init:{headers:meta.headers,credentials:'include'}});
+      rememberRequest(op, {url:meta.url,init:{method:meta.method,body:meta.body,headers:meta.headers,credentials:'include'}});
       try {
         const raw = this.responseType === 'json' ? responseValue.call(this) : JSON.parse(responseText.call(this));
         meta.value = consume(raw, meta.url);
@@ -120,6 +147,11 @@
     this.addEventListener('readystatechange', transform);
     return result;
   };
+  proto.send = function (body) {
+    const meta = tracked.get(this);
+    if (meta) meta.body = body;
+    return nativeSend.apply(this, arguments);
+  };
   proto.setRequestHeader = function (name, value) {
     tracked.get(this)?.headers.set(name, value);
     return nativeHeader.apply(this, arguments);
@@ -132,13 +164,22 @@
       if (!state.request) throw new Error('Replies are not ready yet. Please try again.');
       const cursor = state.cursor;
       const url = new URL(state.request.url, location.href);
-      const variables = JSON.parse(url.searchParams.get('variables'));
-      variables.cursor = cursor;
-      url.searchParams.set('variables', JSON.stringify(variables));
-      const response = await nativeFetch(url, {...state.request.init,signal:AbortSignal.any([signal,AbortSignal.timeout(12000)])});
+      const init = {...state.request.init};
+      if (init.method?.toUpperCase() === 'POST') {
+        const body = JSON.parse(init.body);
+        body.variables = {...body.variables, cursor};
+        init.body = JSON.stringify(body);
+      } else {
+        const variables = JSON.parse(url.searchParams.get('variables') || '{}');
+        variables.cursor = cursor;
+        url.searchParams.set('variables', JSON.stringify(variables));
+      }
+      const response = await nativeFetch(url, {...init,signal:AbortSignal.any([signal,AbortSignal.timeout(12000)])});
       if (!response.ok) throw new Error(response.status === 429 ? 'X is limiting requests. Try again in a moment.' : 'Could not load replies. Please try again.');
-      const parsed = core.read(await response.json(), state.id);
-      if (current !== state || threadId() !== state.id) return false;
+      const data = await response.json();
+      const parsed = state.kind === 'home' ? core.readHome(data) : core.read(data, state.id);
+      if (!parsed.valid) throw new Error('X changed this feed response. Please try again.');
+      if (current !== state || activeKey() !== state.id) return false;
       state.replies = core.merge(state.replies, parsed.replies);
       state.cursor = parsed.cursor === cursor ? null : parsed.cursor;
     }
@@ -154,8 +195,8 @@
     pageAbort = new AbortController();
     try {
       const [available] = await Promise.all([ensurePage(state,target,pageAbort.signal),wait(target > state.page ? FORWARD_DELAY : 0)]);
-      if (current !== state || threadId() !== state.id) return;
-      if (!available) { error = 'End of this conversation.'; return; }
+      if (current !== state || activeKey() !== state.id) return;
+      if (!available) { error = isHome() ? 'No more posts on that page.' : 'End of this conversation.'; return; }
       state.page = target;
       renderReplies();
       // One intentional move to the new page's first reply; no scroll trapping.
@@ -183,7 +224,7 @@
     return element;
   }
   function result(row) {
-    const value = row.item.item.itemContent.tweet_results.result;
+    const value = row.tweet || row.item.item.itemContent.tweet_results.result;
     return value.tweet || value;
   }
   function body(tweet) {
@@ -218,6 +259,7 @@
       const image = node('img');image.src=imageUrl;image.alt='';image.loading='lazy';image.width=40;image.height=40;avatar.append(image);
     } else avatar.textContent = name.slice(0,1).toUpperCase();
     const content = node('div','content');
+    if (row.repostedBy) content.append(node('div', 'social-context', `${row.repostedBy} reposted`));
     const heading = node('div','author');
     heading.append(link(name,handle?`/${handle}`:permalink,'name'));
     if (handle) heading.append(node('span','handle',`@${handle}`));
@@ -252,17 +294,21 @@
     if (quote?.legacy?.full_text) {
       const quoted = link('',`/i/web/status/${quote.rest_id}`,'quote');quoted.append(node('span',null,quote.legacy.full_text));content.append(quoted);
     }
-    const nativeUrl = new URL(permalink, location.origin);
-    nativeUrl.searchParams.set('sifi_native_reply', row.id);
-    const openReply = link('Open reply ↗', nativeUrl.href, 'open-reply');
-    openReply.addEventListener('click', event => {
-      if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-      event.preventDefault();
-      event.stopPropagation();
-      // A fresh native thread avoids reusing X's already-shaped reply cache.
-      location.assign(nativeUrl.href);
-    });
-    content.append(openReply);
+    if (isHome()) {
+      content.append(link('Open post ↗', permalink, 'open-reply'));
+    } else {
+      const nativeUrl = new URL(permalink, location.origin);
+      nativeUrl.searchParams.set('sifi_native_reply', row.id);
+      const openReply = link('Open reply ↗', nativeUrl.href, 'open-reply');
+      openReply.addEventListener('click', event => {
+        if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        event.stopPropagation();
+        // A fresh native thread avoids reusing X's already-shaped reply cache.
+        location.assign(nativeUrl.href);
+      });
+      content.append(openReply);
+    }
     article.append(avatar,content);
     return article;
   }
@@ -272,14 +318,14 @@
     const start = (current.page - 1) * core.PAGE_SIZE;
     const rows = current.replies.slice(start,start + core.PAGE_SIZE);
     list.replaceChildren(...rows.map(card));
-    if (!rows.length) list.append(node('p','empty','No replies in this conversation yet.'));
+    if (!rows.length) list.append(node('p','empty',isHome() ? 'No posts in this feed yet.' : 'No replies in this conversation yet.'));
     updateControls();
   }
   function pageStatus(atCap, atEnd) {
     if (error) return error;
     if (pending) return 'Taking a short pause…';
-    if (atCap) return 'Reply limit reached · 60 replies maximum.';
-    if (atEnd) return 'End of this conversation.';
+    if (atCap) return isHome() ? 'Feed finished · 60 posts maximum.' : 'Reply limit reached · 60 replies maximum.';
+    if (atEnd) return isHome() ? 'End of this feed.' : 'End of this conversation.';
     return 'One page at a time.';
   }
   function updateControls() {
@@ -290,7 +336,7 @@
     const atCap = current.page === core.MAX_PAGES;
     const atEnd = !current.cursor && end === current.replies.length;
     const knownPages = Math.ceil(current.replies.length / core.PAGE_SIZE);
-    shadow.querySelector('.range').textContent = end ? `Replies ${start + 1}–${end}` : 'Replies';
+    shadow.querySelector('.range').textContent = end ? `${noun()} ${start + 1}–${end}` : noun();
     shadow.querySelector('.summary').textContent = `Page ${current.page} · ${core.MAX_PAGES} pages maximum`;
     shadow.querySelector('.status').textContent = pageStatus(atCap, atEnd);
     host.setAttribute('aria-busy', String(pending));
@@ -321,13 +367,13 @@
       }
     }
     const height = toolbar?.getBoundingClientRect().height || 0;
-    host.style.setProperty('--sifi-toolbar-space', `${Math.ceil(height) + 16}px`);
+    host.style.setProperty('--sifi-toolbar-space', `${Math.ceil(height) + 32}px`);
   }
 
   // Only the small original-post shell is observed, never the comment list.
   // X reserves a screenful for its now-empty replies; trim that empty tail.
   function fitRoot() {
-    if (!rootRegion || !host || current?.id !== threadId()) return;
+    if (isHome() || !rootRegion || !host || current?.id !== activeKey()) return;
     const cells = [...rootRegion.querySelectorAll('[data-testid="cellInnerDiv"]')];
     const meaningful = cells.filter(cell => cell.querySelector(
       'article[data-testid="tweet"], [data-testid="tweetTextarea_0"], [data-testid="inline_reply_offscreen"]'
@@ -345,13 +391,13 @@
   }
 
   function mount() {
-    if(!current?.ready || current.id!==threadId())return;
+    if(!current?.ready || current.id!==activeKey())return;
     const column=document.querySelector('[data-testid="primaryColumn"]');
     const region=column?.querySelector('section[role="region"]');
-    if(!region || !region.querySelector('article[data-testid="tweet"]')){scheduleMount();return;}
+    if(!column || (!isHome() && (!region || !region.querySelector('article[data-testid="tweet"]')))){scheduleMount();return;}
     if(!host){
       host=document.createElement('sifi-reply-pages');
-      host.setAttribute('aria-label','Paginated replies');
+      host.setAttribute('aria-label',isHome() ? 'Paginated Home feed' : 'Paginated replies');
       host.attachShadow({mode:'open'}).innerHTML=`
       <style>
       :host{ display:block; box-sizing:border-box; padding:0 0 max(var(--sifi-toolbar-space,100px),env(safe-area-inset-bottom)); color:var(--sifi-text,#e7e9ea); font:15px/1.45 system-ui,sans-serif; }
@@ -366,6 +412,7 @@
       .avatar img{ width:40px; height:40px; object-fit:cover}
 
       .content{ min-width:0; flex:1}
+      .social-context{ color:var(--sifi-muted,#8b98a5); font-size:12px; margin-bottom:5px}
       .author{ display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 6px; font-size:14px}
       .name{ font-weight:700; color:inherit; overflow-wrap:anywhere}
       .handle,.date{ color:var(--sifi-muted,#8b98a5); font-size:12px}
@@ -391,19 +438,30 @@
       .next{ background:var(--sifi-next,#182c3b)}
       .status{ min-height:18px; margin:10px 0 0; color:var(--sifi-muted,#8b98a5); font-size:12px}
 
-      </style><div class="reply-list"></div><nav class="pager" aria-label="Reply pages"><div class="heading"><div><div class="range"></div><div class="summary"></div></div><span class="badge">SIFI Focus</span></div><div class="pages">${Array.from({length:core.MAX_PAGES},(_,i)=>`<button type="button" data-page="${i+1}" aria-label="Reply page ${i+1}">${i+1}</button>`).join('')}</div><div class="actions"><button type="button" class="previous">← Previous</button><button type="button" class="next">Next page</button></div><p class="status" role="status" aria-live="polite"></p></nav>`;
+      </style><div class="reply-list"></div><nav class="pager" aria-label="${isHome() ? 'Post pages' : 'Reply pages'}"><div class="heading"><div><div class="range"></div><div class="summary"></div></div><span class="badge">SIFI Focus</span></div><div class="pages">${Array.from({length:core.MAX_PAGES},(_,i)=>`<button type="button" data-page="${i+1}" aria-label="${isHome() ? 'Post' : 'Reply'} page ${i+1}">${i+1}</button>`).join('')}</div><div class="actions"><button type="button" class="previous">← Previous</button><button type="button" class="next">Next page</button></div><p class="status" role="status" aria-live="polite"></p></nav>`;
       host.shadowRoot.addEventListener('click',event=>{const button=event.target.closest('button');if(button && !button.disabled)go(Number(button.dataset.page));});
       renderReplies();
     }
-    if(region.nextElementSibling!==host)region.after(host);
-    if(rootRegion!==region){
+    if (region) {
+      if (region.nextElementSibling !== host) region.after(host);
+    } else if (host.parentElement !== column) column.append(host);
+    if (isHome()) {
+      document.documentElement.setAttribute('data-sifi-home-active', '');
+      if (region) region.setAttribute('data-sifi-home-native', '');
+      if (!pagerObserver) {
+        pagerObserver = new IntersectionObserver(entries => {
+          document.documentElement.toggleAttribute('data-sifi-home-pager-visible', entries[0].isIntersecting);
+        });
+        pagerObserver.observe(host.shadowRoot.querySelector('.pager'));
+      }
+    } else if (rootRegion !== region) {
       rootObserver?.disconnect();
-      rootRegion=region;
-      region.setAttribute('data-sifi-post-shell','');
-      rootObserver=new ResizeObserver(fitRoot);
-      for(const cell of region.querySelectorAll('[data-testid="cellInnerDiv"]'))rootObserver.observe(cell);
+      rootRegion = region;
+      region.setAttribute('data-sifi-post-shell', '');
+      rootObserver = new ResizeObserver(fitRoot);
+      for (const cell of region.querySelectorAll('[data-testid="cellInnerDiv"]')) rootObserver.observe(cell);
     }
-    document.documentElement.setAttribute('data-sifi-replies-active','');
+    document.documentElement.setAttribute('data-sifi-replies-active', '');
     if(getComputedStyle(document.body).backgroundColor==='rgb(255, 255, 255)')for(const[key,value]of Object.entries({text:'#0f1419',muted:'#536471',border:'#cfd9de',surface:'#f7f9fa',next:'#e8f4fd'}))host.style.setProperty(`--sifi-${key}`,value);
     fitRoot();syncToolbar();
   }
@@ -422,6 +480,11 @@
     rootObserver?.disconnect();
     toolbarObserver?.disconnect();
     toolbar = null;
+    pagerObserver?.disconnect();
+    pagerObserver = null;
+    for (const element of document.querySelectorAll('[data-sifi-home-native]')) element.removeAttribute('data-sifi-home-native');
+    document.documentElement?.removeAttribute('data-sifi-home-active');
+    document.documentElement?.removeAttribute('data-sifi-home-pager-visible');
     if (rootRegion) {
       rootRegion.removeAttribute('data-sifi-post-shell');
       rootRegion.style.removeProperty('--sifi-post-shell-height');
@@ -438,13 +501,13 @@
   // Cheap route checks only. Replies never install a scroll/touch handler or
   // a document-wide MutationObserver, and never change the native toolbar.
   setInterval(() => {
-    const routeKey = `${location.pathname}|${nativeReplyId() || ''}`;
+    const key = activeKey();
+    const routeKey = `${location.pathname}|${key || ''}|${nativeReplyId() || ''}`;
     if (routeKey !== lastPath) {
       lastPath = routeKey;
       cleanup();
-      const id = threadId();
-      current = id ? sessions.get(id) || null : null;
+      current = key ? homeSessions.get(key) || sessions.get(key) || null : null;
     }
-    if (threadId() && current?.ready && !host?.isConnected) scheduleMount();
+    if (key && current?.ready && !host?.isConnected) scheduleMount();
   }, 500);
 })();

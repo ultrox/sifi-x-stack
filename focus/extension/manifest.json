@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "SIFI X Focus",
-  "version": "0.3.2",
-  "description": "Following by default, one video at a time, and replies limited to six deliberate pages.",
+  "version": "0.4.1",
+  "description": "Following by default, one video at a time, and Home/replies limited to six deliberate pages.",
   "content_scripts": [
     {
       "matches": [
