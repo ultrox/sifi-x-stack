@@ -14,3 +14,7 @@ html[data-sifi-replies-active] [data-sifi-post-shell] {
   overflow: clip;
 }
 html[data-sifi-replies-active] [data-sifi-empty-tail] { display: none !important; }
+
+/* Home's top-edge refresh is cosmetic; browser overscroll must not reload it. */
+html[data-sifi-cosmetic-refresh],
+html[data-sifi-cosmetic-refresh] body { overscroll-behavior-y: contain; }

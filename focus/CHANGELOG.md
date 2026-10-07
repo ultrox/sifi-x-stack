@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.5
+
+- Add a cosmetic pull-to-refresh loader at the top of a saved Home edition.
+- Show “Loading…” for 1.6 seconds, then return to the unchanged feed without requests, cache refreshes or document reloads.
+- Keep normal scrolling, horizontal gestures, video controls and dialogs outside the gesture handler.
+
 ## 0.5.4
 
 - Add saved native Home editions at 08:00, 13:00 and 18:00 local time, with up to 40 posts per feed.

@@ -4,6 +4,7 @@ Predictable Home editions, Following by default, one video at a time, and delibe
 
 - Home selects Following each time you enter it.
 - Home uses X’s native feed with saved editions: up to 40 posts, refreshed on your next visit after 08:00, 13:00 or 18:00 local time. Reloading reuses the current edition. Following and For You keep separate saved batches.
+- Pull down at the top for a brief cosmetic loading animation; the saved edition stays exactly as it was.
 - A quiet edition heading and ending mark a finite feed; the active reading session never refreshes because the clock crosses an update window. See [Home editions](EDITIONS.md) for cache behavior, storage boundaries and maintenance.
 - Fullscreen videos block touch swipes, wheel scrolling, navigation keys, automatic next playback and next-video route changes. Exit/back and seeking remain available.
 - Replies show 10 per page, up to 6 pages / 60 replies per conversation.

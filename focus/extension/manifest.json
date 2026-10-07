@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SIFI X Focus",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "Predictable saved Home editions, Following by default, one video at a time, and deliberate reply pages.",
   "content_scripts": [
     {
@@ -27,6 +27,7 @@
       "js": [
         "editions-core.js",
         "editions.js",
+        "edition-refresh.js",
         "focus.js",
         "replies-core.js",
         "replies.js"

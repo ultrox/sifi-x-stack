@@ -28,6 +28,7 @@
   }
   function syncVisit() {
     const path = location.pathname;
+    if (!/^\/home\/?$/.test(path)) window.SifiEditionRefresh?.setEnabled(false);
     const transient = /^\/compose\//.test(path) || /\/(?:mediaViewer|video\/\d+)\/?$/.test(path);
     const home = /^\/home\/?$/.test(path) || (wasHome && transient);
     const nextAccount = accountId();
@@ -269,6 +270,7 @@
   }
   const clock = time => new Date(time).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
   function removeUI() {
+    window.SifiEditionRefresh?.setEnabled(false);
     header?.remove();ending?.remove();
     header = ending = null;
     toolbarObserver?.disconnect();toolbarObserver = toolbar = null;
@@ -348,6 +350,7 @@
       const draft = [...document.querySelectorAll('textarea,[contenteditable="true"]')].some(el => (el.value || el.textContent || '').trim());
       if (!draft) { refreshing = true; location.reload(); return; }
     }
+    window.SifiEditionRefresh?.setEnabled(!!record && /^\/home\/?$/.test(location.pathname));
     if (record) fitEnding(record,region);
     const light = getComputedStyle(document.body).backgroundColor === 'rgb(255, 255, 255)';
     const key = `${feed}|${record?.edition}|${record?.capturedAt}|${problem}|${light}`;
