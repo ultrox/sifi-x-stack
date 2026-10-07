@@ -1,12 +1,9 @@
 # Changelog
 
-## 0.4.1
+## 0.4.2
 
-- Add in-place Home pagination for Following and For You: 10 posts per page, 6 pages maximum, no infinite loading.
-- Preserve separate feed positions, repost attribution, native feed tabs and post links.
-- Support X’s read-only POST timeline requests and cursor fetching without document reloads.
-- Keep a 1.5-second forward pause and immediate cached backward navigation.
-- Keep pagination adjacent to the last post and clear of native navigation; hide the floating compose shortcut only while the pager is visible.
+- Remove Home pagination and restore X’s native Home feed.
+- Keep existing reply pagination, Following by default, and video restrictions.
 
 ## 0.3.2
 

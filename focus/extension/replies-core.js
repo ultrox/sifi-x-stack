@@ -1,4 +1,4 @@
-/* Pure parsing and shaping for bounded Home and reply readers. */
+/* Pure response shaping: X owns the cards and their virtualized layout. */
 ((root, factory) => {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.SifiReplyPages = factory();
@@ -76,46 +76,5 @@
     ];
     return view;
   }
-  function homeTimeline(data) {
-    return data?.data?.home?.home_timeline_urt || data?.data?.home?.home_timeline;
-  }
-  function readHome(data) {
-    const target = homeTimeline(data);
-    if (!Array.isArray(target?.instructions)) return { replies: [], cursor: null, valid: false };
-    const rows = target.instructions.flatMap(instruction => instruction.entries || (instruction.entry ? [instruction.entry] : []));
-    const replies = [];
-    let cursor = null;
-    for (const entry of rows) {
-      const content = entry.content;
-      if (!content) continue;
-      if (content.cursorType === 'Bottom') { cursor = content.value; continue; }
-      if (entry.entryId?.startsWith('promoted-')) continue;
-      const items = content.itemContent ? [{ item: { itemContent: content.itemContent } }] : content.items || [];
-      for (const item of items) {
-        const itemContent = item.item?.itemContent;
-        if (itemContent?.promotedMetadata) continue;
-        const original = tweet(itemContent);
-        const retweet = original?.legacy?.retweeted_status_result?.result || original?.retweeted_status_result?.result;
-        const result = retweet?.tweet || retweet || original;
-        if (!result?.rest_id || !result.legacy) continue;
-        const user = original?.core?.user_results?.result;
-        const repostedBy = retweet ? user?.core?.name || user?.legacy?.name || 'Someone' : null;
-        replies.push({ id: result.rest_id, entry, item, tweet: result, repostedBy });
-      }
-    }
-    return { replies, cursor, valid: true };
-  }
-  function shapeHome(data) {
-    const view = clone(data);
-    const target = homeTimeline(view);
-    if (!target) return null;
-    target.instructions = [
-      { type: 'TimelineClearCache' },
-      { type: 'TimelineAddEntries', entries: [] },
-      { type: 'TimelineTerminateTimeline', direction: 'Top' },
-      { type: 'TimelineTerminateTimeline', direction: 'Bottom' },
-    ];
-    return view;
-  }
-  return { PAGE_SIZE, MAX_PAGES, MAX_REPLIES, timeline, read, merge, shape, homeTimeline, readHome, shapeHome };
+  return { PAGE_SIZE, MAX_PAGES, MAX_REPLIES, timeline, read, merge, shape };
 });

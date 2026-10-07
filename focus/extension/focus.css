@@ -6,7 +6,7 @@ html[data-sifi-video-locked] [data-testid="vss-scroll-view"] {
 }
 
 /* Keep the native toolbar; reserve its space below the inline pager. */
-html[data-sifi-replies-active]:not([data-sifi-home-active]) [data-testid="FloatingActionButtonBase"] { display: none !important; }
+html[data-sifi-replies-active] [data-testid="FloatingActionButtonBase"] { display: none !important; }
 /* The native shell contains only the original post/composer, not replies. */
 html[data-sifi-replies-active] [data-sifi-post-shell] {
   height: var(--sifi-post-shell-height, auto) !important;
@@ -14,8 +14,3 @@ html[data-sifi-replies-active] [data-sifi-post-shell] {
   overflow: clip;
 }
 html[data-sifi-replies-active] [data-sifi-empty-tail] { display: none !important; }
-
-/* Home's native tabs/composer stay; its empty infinite timeline is replaced. */
-html[data-sifi-home-active] [data-sifi-home-native],
-html[data-sifi-home-active] [data-testid="primaryColumn"] [data-testid="emptyState"] { display: none !important; }
-html[data-sifi-home-pager-visible] [data-testid="FloatingActionButtonBase"] { visibility: hidden !important; }
