@@ -369,7 +369,9 @@
       details.textContent = `${record.count} posts · Saved ${clock(record.capturedAt)} · Next ${clock(record.nextAt)}`;
       header.setAttribute('aria-label',`${record.label} edition, ${day}. ${details.textContent}`);
     } else { title.textContent = 'Edition unavailable'; details.textContent = problem; }
-    ending.shadowRoot.innerHTML = `<style>${style}:host{padding:24px 24px max(var(--edition-bottom,100px),env(safe-area-inset-bottom));border-top:1px solid ${border};text-align:center}.line{width:24px;height:2px;margin:0 auto 14px;background:${muted};opacity:.5}strong{font-size:15px;font-weight:600}.muted{margin-top:6px;font-size:13px}</style><div class="line"></div><strong></strong><p class="muted"></p>`;
+    // The footer occupies the native timeline’s empty tail. Stack it above that
+    // positioned container so the visible links and buttons receive real taps.
+    ending.shadowRoot.innerHTML = `<style>${style}:host{position:relative;z-index:1;padding:24px 24px max(var(--edition-bottom,100px),env(safe-area-inset-bottom));border-top:1px solid ${border};text-align:center}.line{width:24px;height:2px;margin:0 auto 14px;background:${muted};opacity:.5}strong{font-size:15px;font-weight:600}.muted{margin-top:6px;font-size:13px}</style><sifi-shortcuts data-mode="cards"></sifi-shortcuts><div class="line"></div><strong></strong><p class="muted"></p>`;
     ending.shadowRoot.querySelector('strong').textContent = record ? 'You’re caught up with this edition.' : 'Your edition could not load.';
     ending.shadowRoot.querySelector('p').textContent = problem || (record ? `Next edition after ${clock(record.nextAt)} when you return to Home.` : 'Reload to try again.');
   }

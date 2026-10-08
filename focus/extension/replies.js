@@ -387,12 +387,12 @@
       button{ appearance:none; border:1px solid var(--sifi-border,#2f3336); background:transparent; color:inherit; min-width:0; min-height:46px; padding:8px 4px; border-radius:10px; font:600 15px system-ui,sans-serif; cursor:pointer; touch-action:manipulation}
       button[aria-current="page"]{ background:#1d9bf0; border-color:#1d9bf0; color:#fff}
       button:disabled:not([aria-current="page"]){ cursor:default; opacity:.4}
-      .actions{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px}
+      .actions{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto; gap:8px; margin-top:8px}
       .next{ background:var(--sifi-next,#182c3b)}
       .status{ min-height:18px; margin:10px 0 0; color:var(--sifi-muted,#8b98a5); font-size:12px}
 
-      </style><div class="reply-list"></div><nav class="pager" aria-label="Reply pages"><div class="heading"><div><div class="range"></div><div class="summary"></div></div><span class="badge">SIFI Focus</span></div><div class="pages">${Array.from({length:core.MAX_PAGES},(_,i)=>`<button type="button" data-page="${i+1}" aria-label="Reply page ${i+1}">${i+1}</button>`).join('')}</div><div class="actions"><button type="button" class="previous">← Previous</button><button type="button" class="next">Next page</button></div><p class="status" role="status" aria-live="polite"></p></nav>`;
-      host.shadowRoot.addEventListener('click',event=>{const button=event.target.closest('button');if(button && !button.disabled)go(Number(button.dataset.page));});
+      </style><div class="reply-list"></div><nav class="pager" aria-label="Reply pages"><div class="heading"><div><div class="range"></div><div class="summary"></div></div><span class="badge">SIFI Focus</span></div><div class="pages">${Array.from({length:core.MAX_PAGES},(_,i)=>`<button type="button" data-page="${i+1}" aria-label="Reply page ${i+1}">${i+1}</button>`).join('')}</div><div class="actions"><button type="button" class="previous">← Previous</button><button type="button" class="next">Next page</button><sifi-shortcuts data-mode="compact"></sifi-shortcuts></div><p class="status" role="status" aria-live="polite"></p></nav>`;
+      host.shadowRoot.addEventListener('click',event=>{const button=event.target.closest('button[data-page]');if(button && !button.disabled)go(Number(button.dataset.page));});
       renderReplies();
     }
     if(region.nextElementSibling!==host)region.after(host);

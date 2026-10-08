@@ -49,7 +49,7 @@ function setup() {
   p.event('touchstart');assert.equal(p.moves(),1);
   const drag=p.event('touchmove',100,310);assert.equal(drag.prevented,true);assert.equal(drag.stopped,true);
   const released=p.event('touchend');assert.equal(released.prevented,true);assert.equal(p.overlay.attrs['data-state'],'loading');assert.equal(p.status.textContent,'Loading…');assert.equal(p.moves(),0);
-  assert.equal([...p.timers.values()][0].ms,1600,'The cosmetic delay is fixed');
+  assert.equal([...p.timers.values()][0].ms,900,'The cosmetic delay is fixed');
   p.event('touchstart');p.event('touchmove',100,330);p.event('touchend');assert.equal(p.timers.size,1,'Repeated pulls do not extend or stack loaders');
   p.finishTimers();p.finishTimers();assert.equal(p.overlay.hidden,true);assert.equal(p.status.textContent,'');
 }

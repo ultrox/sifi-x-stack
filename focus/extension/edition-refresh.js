@@ -1,7 +1,7 @@
 /* Cosmetic pull-to-refresh. This module never requests or replaces feed data. */
 (() => {
   const THRESHOLD = 80;
-  const DURATION = 1600;
+  const DURATION = 900;
   let enabled = false;
   let gesture = null;
   let host = null;

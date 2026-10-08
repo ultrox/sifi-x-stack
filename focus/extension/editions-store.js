@@ -41,3 +41,5 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   task.then(record => respond({record}), () => respond({error:'Could not save the edition on this device.'}));
   return true;
 });
+
+importScripts('shortcuts-store.js');

@@ -6,8 +6,6 @@
   let activeVideo = null;
   let finished = false;
   let followingRequested = false;
-  let wasHome = false;
-  let homeTabs = null;
 
   const isViewer = url => /\/mediaViewer\/?$|\/video\/\d+\/?$/.test(url.pathname);
   const videoId = url => url.searchParams.get('currentTweet') || url.pathname.match(/\/status\/(\d+)/)?.[1];
@@ -93,9 +91,8 @@
 
     const home = /^\/home\/?$/.test(location.pathname);
     const tabs = home ? document.querySelector('[role="tablist"]') : null;
-    if (!home || !wasHome || (tabs && tabs !== homeTabs)) followingRequested = false;
-    wasHome = home;
-    homeTabs = tabs;
+    // Default once per document, when Home first becomes ready. Keep this flag
+    // through SPA routes and tab remounts so Back preserves X's feed restoration.
     if (home && tabs && !followingRequested) {
       const choices = [...tabs.querySelectorAll('[role="tab"]')];
       // Home's second tab is Following, independent of the display language.

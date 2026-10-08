@@ -1,11 +1,11 @@
 {
   "name": "sifi-x-focus",
-  "version": "0.5.5",
+  "version": "0.6.7",
   "private": true,
   "scripts": {
-    "check": "node --check extension/focus.js && node --check extension/replies-core.js && node --check extension/replies.js && node --check extension/editions-core.js && node --check extension/editions.js && node --check extension/editions-bridge.js && node --check extension/editions-store.js && node --check extension/edition-refresh.js",
+    "check": "node --check extension/focus.js && node --check extension/replies-core.js && node --check extension/replies.js && node --check extension/editions-core.js && node --check extension/editions.js && node --check extension/editions-bridge.js && node --check extension/editions-store.js && node --check extension/edition-refresh.js && node --check extension/shortcuts-core.js && node --check extension/shortcuts-store.js && node --check extension/shortcuts.js",
     "build": "node scripts/build.cjs",
     "build:crx": "node scripts/build.cjs --crx",
-    "test": "node scripts/test.cjs && node scripts/replies-test.cjs && node scripts/replies-transport-test.cjs && node scripts/editions-test.cjs && node scripts/editions-transport-test.cjs && node scripts/editions-store-test.cjs && node scripts/edition-refresh-test.cjs"
+    "test": "node scripts/test.cjs && node scripts/replies-test.cjs && node scripts/replies-transport-test.cjs && node scripts/editions-test.cjs && node scripts/editions-transport-test.cjs && node scripts/editions-store-test.cjs && node scripts/edition-refresh-test.cjs && node scripts/shortcuts-test.cjs"
   }
 }

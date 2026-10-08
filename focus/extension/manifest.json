@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SIFI X Focus",
-  "version": "0.5.5",
+  "version": "0.6.7",
   "description": "Predictable saved Home editions, Following by default, one video at a time, and deliberate reply pages.",
   "content_scripts": [
     {
@@ -12,7 +12,9 @@
         "https://*.twitter.com/*"
       ],
       "js": [
-        "editions-bridge.js"
+        "editions-bridge.js",
+        "shortcuts-core.js",
+        "shortcuts.js"
       ],
       "run_at": "document_start",
       "world": "ISOLATED"
