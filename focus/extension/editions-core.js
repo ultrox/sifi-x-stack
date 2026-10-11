@@ -5,6 +5,15 @@
 })(globalThis, () => {
   const SCHEMA = 1;
   const LIMIT = 40;
+  const FOR_YOU_LIMIT = 18;
+  function settings(value) {
+    return {forYouLimit:Number.isInteger(value?.forYouLimit) ? Math.max(1, Math.min(FOR_YOU_LIMIT,value.forYouLimit)) : FOR_YOU_LIMIT};
+  }
+  function limitFor(feed, value) { return feed === 'for-you' ? settings(value).forYouLimit : LIMIT; }
+  function bounded(record, value) {
+    if (record?.feed !== 'for-you') return record;
+    return {...record, ...freeze(record.payload, limitFor(record.feed,value))};
+  }
   const HOURS = [8, 13, 18];
   const LABELS = ['Morning', 'Afternoon', 'Evening'];
   const clone = value => JSON.parse(JSON.stringify(value));
@@ -31,7 +40,8 @@
     const result = item?.tweet_results?.result;
     return result?.tweet || result;
   }
-  function freeze(data) {
+  function freeze(data, limit = LIMIT) {
+    limit = Number.isInteger(limit) ? Math.max(1, Math.min(LIMIT,limit)) : LIMIT;
     const view = clone(data);
     const target = timeline(view);
     if (!Array.isArray(target?.instructions)) throw new Error('Unrecognized Home response');
@@ -40,7 +50,7 @@
     const seen = new Set();
     function keep(item) {
       const value = tweet(item);
-      if (!value?.rest_id || !value.legacy || item.promotedMetadata || seen.has(value.rest_id) || seen.size >= LIMIT) return false;
+      if (!value?.rest_id || !value.legacy || item.promotedMetadata || seen.has(value.rest_id) || seen.size >= limit) return false;
       seen.add(value.rest_id);
       return true;
     }
@@ -76,18 +86,18 @@
     ];
     return view;
   }
-  function request(urlValue, init = {}) {
+  function request(urlValue, init = {}, limit = LIMIT) {
     const url = new URL(urlValue);
     const next = {...init};
     if (String(init.method || 'GET').toUpperCase() === 'POST') {
       const body = JSON.parse(init.body);
-      body.variables = {...body.variables, count:LIMIT};
+      body.variables = {...body.variables, count:limit};
       delete body.variables.cursor;
       delete body.variables.seenTweetIds;
       next.body = JSON.stringify(body);
     } else {
       const variables = JSON.parse(url.searchParams.get('variables') || '{}');
-      variables.count = LIMIT;
+      variables.count = limit;
       delete variables.cursor;
       delete variables.seenTweetIds;
       url.searchParams.set('variables', JSON.stringify(variables));
@@ -141,5 +151,5 @@
       /^\d+$/.test(record.edition) && Number.isFinite(record.capturedAt) && Number.isFinite(record.nextAt) &&
       record.count >= 0 && record.count <= LIMIT && Array.isArray(timeline(record.payload)?.instructions);
   }
-  return {SCHEMA, LIMIT, windowAt, operation, freeze, empty, request, hasCursor, valid, lastTweetId, reaction, applyReaction};
+  return {SCHEMA, LIMIT, FOR_YOU_LIMIT, settings, limitFor, bounded, windowAt, operation, freeze, empty, request, hasCursor, valid, lastTweetId, reaction, applyReaction};
 });

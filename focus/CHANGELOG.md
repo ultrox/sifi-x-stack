@@ -70,3 +70,86 @@
 ## 0.1.0
 
 - Default Home to Following and block fullscreen video swipes / automatic next clips.
+
+## 0.6.8
+
+- Cap For you editions at 18 posts, including older saved editions on replay.
+- Add a compact options popup with a persistent 1–18 post limit.
+- Keep Following at its existing limit.
+- Reserve an explicitly unconfigured JEV section pending its qualification contract.
+
+## 0.7.0
+
+- Add optional JEV qualification labels for saved For you posts, with local verdict corrections.
+- Add TypeSafe key and enable controls; keep the 18-post cap and labels-only behavior.
+- Persist assessments and attempts without expiry; never automatically rerate or retry.
+- Assess text and media descriptions against a versioned world/tech/entertainment contract.
+
+## 0.7.1
+
+- Switch classification to an explicit in-feed Classify posts button, with cached/new counts and progress.
+- Restore cached labels without network calls; never classify because a card was scrolled into view.
+- Add the warm orange/charcoal icon variant to toolbar and settings.
+
+## 0.7.2
+
+- Include author display names and handles, including quoted authors, in new JEV assessments.
+- Move assessment badges into their own row above post content, with clear titles and light/dark styling.
+- Distinguish blue missing-context/uncertainty notices from orange attention flags.
+- Preserve existing cached assessments without additional provider calls.
+
+## 0.7.3
+
+- Fix JEV badges taking a full post height inside X’s flex columns, which caused gaps and clipped content.
+- Add a nested, fixed-height flex layout fixture to reproduce the sizing regression.
+
+## 0.7.4
+
+- Add Assessment / Log tabs inside expanded JEV badges.
+- Persist request JSON, response body, HTTP status and timestamps for new assessments, excluding authorization headers.
+- Show old-cache log unavailability without reclassifying posts.
+
+## 0.7.5
+
+- Replace disabled All assessed with an active Reassess posts action.
+- Explicit reassessment replaces current-edition results and logs, including cached failures and corrections; ordinary reloads keep using the cache.
+- Show progress for fresh assessments and deduplicate concurrent reassessment requests.
+
+## 0.7.6
+
+- Use neutral “Text alone isn’t enough” and “Low confidence · N%” labels for assessment limitations.
+- Explain JEV’s original verdict, the unvalidated local 65% cutoff, local verdict changes, available inputs and user overrides.
+- Identify rubric explanations as extension wording rather than model quotations; existing cached results need no new requests.
+
+## 0.7.7
+
+- Block automatic video playback across X, including muted feed previews.
+- Require a trusted click or keyboard activation on the specific player; revoke permission after pause, end or source changes.
+- Remove autoplay/loop attributes from newly inserted videos and retain existing fullscreen next-video restrictions.
+
+## 0.7.8
+
+- Keep topic classification visible and replace large verdict/confidence labels with a small colored information icon.
+- Use amber for low verdict confidence (<65%), blue for medium (65–84%), and purple for high (85%+), with dark theme variants.
+- Explain levels and percentages on expansion and through accessible labels/tooltips, separately from factual accuracy.
+
+## 0.8.0
+
+- Add optional pagination for For you and Following, independently enabled in settings.
+- Limit pages to 1–10 posts (default 10), counting nested conversation posts.
+- Serve slices of the saved edition through X’s native timeline refresh without fetching new posts or replacing native cards.
+- Add numbered, Previous and Next controls to the ordinary-flow edition footer, retaining toolbar clearance.
+- Keep the complete saved edition and page position per feed in the document; new editions start at page one.
+- If X does not request a refreshed timeline, keep the selected page unchanged and show an error instead of reloading.
+
+## 0.8.1
+
+- Stop clicking the selected Following tab, which opens X’s sort menu.
+- Request page changes through the native Home control without an explicit preemptive scroll.
+- Allow a pending page change to consume a cursor-based refresh response; ordinary continuation requests still terminate.
+- Update the integration fixture so selected tabs open a menu and Home refresh includes a cursor. Live verification pending.
+
+## 0.8.2
+
+- Remove feed pagination, its settings, page slicing and native navigation triggers.
+- Restore full saved editions in both Home feeds; preserve comment pagination, JEV and autoplay blocking.

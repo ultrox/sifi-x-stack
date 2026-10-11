@@ -43,3 +43,31 @@ Tests cover video lock/exit, exact page sizes and cap, nested conversations, ded
 Shortcut tests cover URL and image validation, list limits, concurrent edits, worker restarts, and independence from edition/account cleanup. Pixel validation confirmed image upload/resizing, reload persistence, editing/removal, same-tab navigation, unchanged in-place reply paging, and 46 px controls fully above the native toolbar with no horizontal overflow.
 
 For Android hit-testing regressions, open a dedicated Home tab with a saved shortcut and run `node scripts/editions-touch-check.cjs ws://127.0.0.1:PORT/devtools/page/TARGET` from `focus/`. This uses real touch events to check the footer manager, Edit/Add forms, card activation and toolbar layering. It prevents the test card navigation and never modifies stored settings. DOM `.click()` alone cannot detect a transparent timeline covering a visible control.
+
+### Settings (0.6.8)
+
+Open **SIFI X Focus** from the browser's extensions menu for its compact settings
+panel (also available through the extension's Options page). For you defaults to
+18 posts per edition and can be lowered to 1–18. Following retains its 40-post
+maximum. Save, then reload X to apply the setting. Old saved For you editions are
+trimmed on replay without requesting fresh posts; nested conversation posts count
+toward the same limit. The settings survive browser restarts.
+
+The JEV section currently displays **Not configured**. Post qualification is not
+connected and no posts are sent to JEV. Its contract and connection must be defined
+before adding those controls. This release adds no network permissions.
+
+Validation: the full test suite passes, including lower limits, old snapshot
+replay, nested posts and Following isolation. The options UI was checked in a
+local browser preview with a storage stub for saving and reopening the panel.
+The phone was disconnected, so installation and live X verification are pending.
+
+### JEV qualification (0.7.0)
+
+The previous unconfigured placeholder is now implemented. Open X Focus settings,
+enter your TypeSafe API key, enable **Assess saved For you posts**, and save.
+Click **Classify posts** above the For you feed to assess uncached posts. Saved labels appear immediately; scrolling never invokes JEV. Tap a label for its
+reason, confidence and **Wrong assessment** correction. Nothing is hidden or
+replaced. Assessments, failures and corrections persist without expiry; reloading
+or returning to the same post never automatically invokes JEV again.
+See [JEV.md](JEV.md) for the exact behavior, cache guarantees and test details.

@@ -11,15 +11,17 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (!/^\d{1,25}$/.test(account) || !['following','for-you'].includes(feed)) return;
   const key = `${PREFIX}${account}.${feed}`;
   async function run() {
+    const preferences = (await chrome.storage.local.get('sifi.focus.settings'))['sifi.focus.settings'];
+    const bounded = record => core.bounded(record, preferences);
     if (action === 'get') {
       const result = (await chrome.storage.local.get(key))[key];
-      return core.valid(result, account, feed) ? result : null;
+      return core.valid(result, account, feed) ? bounded(result) : null;
     }
     if (action === 'react') {
       const all = await chrome.storage.local.get(null);
       const updates = {};
       for (const [name,value] of Object.entries(all)) {
-        if (name.startsWith(`${PREFIX}${account}.`) && core.valid(value,account,value.feed)) updates[name] = core.applyReaction(value,message.record);
+        if (name.startsWith(`${PREFIX}${account}.`) && core.valid(value,account,value.feed)) updates[name] = bounded(core.applyReaction(value,message.record));
       }
       if (Object.keys(updates).length) await chrome.storage.local.set(updates);
       return updates[key] || null;
@@ -28,13 +30,14 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     if (JSON.stringify(message.record).length > 3_000_000) throw new Error('Edition is too large to save');
     const previous = (await chrome.storage.local.get(key))[key];
     // The first completed capture wins, including concurrent tabs on other X origins.
-    if (core.valid(previous, account, feed) && Number(previous.edition) >= Number(message.record.edition)) return previous;
-    await chrome.storage.local.set({[key]:message.record});
+    if (core.valid(previous, account, feed) && Number(previous.edition) >= Number(message.record.edition)) return bounded(previous);
+    const record = bounded(message.record);
+    await chrome.storage.local.set({[key]:record});
     // Only the current account's two latest feeds are retained. No history yet.
     const all = await chrome.storage.local.get(null);
     const stale = Object.keys(all).filter(k => k.startsWith(PREFIX) && !k.startsWith(`${PREFIX}${account}.`));
     if (stale.length) await chrome.storage.local.remove(stale);
-    return message.record;
+    return record;
   }
   const task = writes.then(run);
   writes = task.catch(() => {});
@@ -43,3 +46,4 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
 });
 
 importScripts('shortcuts-store.js');
+importScripts('jev-store.js');

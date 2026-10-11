@@ -43,3 +43,16 @@ assert.equal(originalRecord.payload.data.home.home_timeline_urt.instructions[0].
 assert.equal(core.lastTweetId(payload([entry(7)])),'7');
 console.log('Edition schedule, DST, native entry preservation, module bounds, ad exclusion, immutable capture, cursor termination and request scope passed.');
 module.exports={payload,entry};
+
+const limited=core.freeze(source,18);
+assert.equal(limited.count,18,'For you counts nested posts toward the same 18-post cap');
+assert.equal(core.settings({forYouLimit:40}).forYouLimit,18);
+assert.equal(core.settings({forYouLimit:0}).forYouLimit,1);
+assert.equal(core.limitFor('following',{forYouLimit:3}),40);
+const old={feed:'for-you',...frozen,capturedAt:123};
+const trimmed=core.bounded(old,{forYouLimit:12});
+assert.equal(trimmed.count,12);assert.equal(trimmed.capturedAt,123);assert.equal(old.count,40);
+assert.deepEqual(core.bounded(trimmed,{forYouLimit:18}),trimmed,'A reduced payload never grows by itself');
+assert.equal(core.bounded({...old,feed:'following'}).count,40);
+assert.equal(JSON.parse(core.request('https://x.com/i/api/graphql/query/HomeTimeline',request,18).init.body).variables.count,18);
+console.log('For you hard cap, configurable lower limits, nested posts, old-edition trimming and Following isolation passed.');

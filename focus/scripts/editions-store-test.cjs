@@ -17,5 +17,13 @@ const record=(account,edition)=>({schema:1,account,feed:'following',edition,capt
  assert.equal((await send({action:'get',account:'123',feed:'following'})).record,null);
  assert.ok((await send({action:'put',account:'456',feed:'following',record:record('999','12')})).error,'Account mismatch is rejected');
  let replied=false;assert.equal(listener({type:'sifi-edition-store',action:'get',account:'456',feed:'following'},{id:'fixture-extension',url:'https://unrelated.test/'},()=>replied=true),undefined);assert.equal(replied,false);
+ const items=Array.from({length:40},(_,i)=>({entryId:`tweet-${i}`,content:{itemContent:{tweet_results:{result:{rest_id:String(i),legacy:{}}}}}}));
+ const old={...record('456','12'),feed:'for-you',count:40,payload:{data:{home:{home_timeline_urt:{instructions:[{type:'TimelineAddEntries',entries:items}]}}}}};
+ data['sifi.edition.456.for-you']=old;
+ assert.equal((await send({action:'get',account:'456',feed:'for-you'})).record.count,18,'Old saved editions are capped');
+ data['sifi.focus.settings']={forYouLimit:9};
+ assert.equal((await send({action:'get',account:'456',feed:'for-you'})).record.count,9,'Saved settings apply on replay');
+ assert.equal((await send({action:'put',account:'456',feed:'for-you',record:{...old,edition:'13'}})).record.count,9,'New captures respect preferences');
+ assert.equal(data['sifi.edition.456.for-you'].count,9);
  console.log('Edition storage serialization, first-writer consistency, no downgrade, account cleanup, and sender validation passed.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

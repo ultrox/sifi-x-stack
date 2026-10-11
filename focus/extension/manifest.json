@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SIFI X Focus",
-  "version": "0.6.7",
+  "version": "0.8.2",
   "description": "Predictable saved Home editions, Following by default, one video at a time, and deliberate reply pages.",
   "content_scripts": [
     {
@@ -14,7 +14,9 @@
       "js": [
         "editions-bridge.js",
         "shortcuts-core.js",
-        "shortcuts.js"
+        "shortcuts.js",
+        "jev-core.js",
+        "jev-labels.js"
       ],
       "run_at": "document_start",
       "world": "ISOLATED"
@@ -27,6 +29,7 @@
         "https://*.twitter.com/*"
       ],
       "js": [
+        "autoplay.js",
         "editions-core.js",
         "editions.js",
         "edition-refresh.js",
@@ -46,5 +49,26 @@
   ],
   "background": {
     "service_worker": "editions-store.js"
+  },
+  "action": {
+    "default_title": "X Focus settings",
+    "default_popup": "options.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "host_permissions": [
+    "https://api.typesafe.ai/*"
+  ],
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
   }
 }

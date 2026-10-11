@@ -42,7 +42,7 @@
     if (message?.type === 'sifi-edition-cache-update') {
       const record = message.record;
       const previous = records.get(record?.feed);
-      if (previous && core.valid(record,account,record.feed) && previous.edition === record.edition) records.set(record.feed,record);
+      if (previous && core.valid(record,account,record.feed) && previous.edition === record.edition) records.set(record.feed,core.bounded(record));
       return;
     }
     if (message?.type !== 'sifi-edition-response') return;
@@ -75,10 +75,10 @@
     // A newly opened tab must never replace a newer edition captured elsewhere.
     if (core.valid(saved, owner, feed) && Number(saved.edition) >= Number(slot.id)) return saved;
     try {
-      const next = core.request(url, init);
+      const next = core.request(url, init, core.limitFor(feed));
       const response = await nativeFetch(next.url, {...next.init, credentials:'include', signal:AbortSignal.timeout(20000)});
       if (!response.ok) throw new Error('X could not load this edition.');
-      const frozen = core.freeze(await response.json());
+      const frozen = core.freeze(await response.json(), core.limitFor(feed));
       checkAccount(owner);
       const record = {
         schema:core.SCHEMA, account:owner, feed, edition:slot.id,
@@ -107,7 +107,7 @@
       const job = navigator.locks ? navigator.locks.request(`sifi-edition:${key}`, run) : run();
       jobs.set(key, job.finally(() => jobs.delete(key)));
     }
-    const record = await jobs.get(key);
+    const record = core.bounded(await jobs.get(key));
     checkAccount(owner);
     records.set(feed, record);
     updateUI();
